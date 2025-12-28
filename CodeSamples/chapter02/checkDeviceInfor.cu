@@ -25,7 +25,10 @@ int main(int argc, char **argv)
     }
 
     int dev = 0, driverVersion = 0, runtimeVersion = 0;
+    
+    // 注意：确保你的 common.h 中定义了 CHECK 宏，否则需要手动添加错误检查代码
     CHECK(cudaSetDevice(dev));
+    
     cudaDeviceProp deviceProp;
     CHECK(cudaGetDeviceProperties(&deviceProp, dev));
     printf("Device %d: \"%s\"\n", dev, deviceProp.name);
@@ -40,11 +43,21 @@ int main(int argc, char **argv)
     printf("  Total amount of global memory:                 %.2f GBytes (%llu "
            "bytes)\n", (float)deviceProp.totalGlobalMem / pow(1024.0, 3),
            (unsigned long long)deviceProp.totalGlobalMem);
+
+    // -----------------------------------------------------------------------
+    // [修改说明] 针对 sm_120 / 新版 CUDA Toolkit 的修改：
+    // clockRate 和 memoryClockRate 属性已被移除，因为现代 GPU 频率是动态调整的。
+    // 为了编译通过，我们将以下代码块注释掉。
+    // -----------------------------------------------------------------------
+    /*
     printf("  GPU Clock rate:                                %.0f MHz (%0.2f "
            "GHz)\n", deviceProp.clockRate * 1e-3f,
            deviceProp.clockRate * 1e-6f);
     printf("  Memory Clock rate:                             %.0f Mhz\n",
            deviceProp.memoryClockRate * 1e-3f);
+    */
+    // -----------------------------------------------------------------------
+
     printf("  Memory Bus Width:                              %d-bit\n",
            deviceProp.memoryBusWidth);
 

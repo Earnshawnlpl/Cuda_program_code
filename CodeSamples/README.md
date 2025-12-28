@@ -1,11 +1,4 @@
-<!--
- * @Descripttion: 
- * @version: 
- * @Author: Lugy
- * @Date: 2024-05-14 19:44:41
- * @LastEditors: Andy
- * @LastEditTime: 2024-05-20 10:15:12
--->
+
 
 Copy from: www.wrox.com/go/procudac
 Book: Professional CUDA C Progtamming
