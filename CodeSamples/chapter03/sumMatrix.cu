@@ -71,54 +71,53 @@ __global__ void sumMatrixOnGPU2D(float *A, float *B, float *C, int NX, int NY)
 
 int main(int argc, char **argv)
 {
-    // set up device
+    // 1. 设置设备
     int dev = 0;
     cudaDeviceProp deviceProp;
     CHECK(cudaGetDeviceProperties(&deviceProp, dev));
     CHECK(cudaSetDevice(dev));
 
-    // set up data size of matrix
+    // 2. 设置矩阵维度 (1 << 14 = 16384)
     int nx = 1 << 14;
     int ny = 1 << 14;
-
     int nxy = nx * ny;
-    int nBytes = nxy * sizeof(float);
+    size_t nBytes = (size_t)nxy * sizeof(float); // 使用 size_t 防止大内存溢出
 
-    // malloc host memory
+    // 3. 分配主机内存
     float *h_A, *h_B, *hostRef, *gpuRef;
     h_A = (float *)malloc(nBytes);
     h_B = (float *)malloc(nBytes);
     hostRef = (float *)malloc(nBytes);
     gpuRef = (float *)malloc(nBytes);
 
-    // initialize data at host side
-    size_t iStart = seconds();
+    // 4. 初始化数据（使用 double 计时以保证精度）
+    double iStart = seconds();
     initialData(h_A, nxy);
     initialData(h_B, nxy);
-    size_t iElaps = seconds() - iStart;
+    double iElaps = seconds() - iStart;
+    printf("Matrix initialization elapsed %f sec\n", iElaps);
 
     memset(hostRef, 0, nBytes);
     memset(gpuRef, 0, nBytes);
 
-    // add matrix at host side for result checks
+    // 5. 主机端计算（用于校验）
     iStart = seconds();
-    sumMatrixOnHost (h_A, h_B, hostRef, nx, ny);
+    sumMatrixOnHost(h_A, h_B, hostRef, nx, ny);
     iElaps = seconds() - iStart;
+    printf("sumMatrixOnHost elapsed %f sec\n", iElaps);
 
-    // malloc device global memory
+    // 6. 分配及拷贝显存
     float *d_MatA, *d_MatB, *d_MatC;
     CHECK(cudaMalloc((void **)&d_MatA, nBytes));
     CHECK(cudaMalloc((void **)&d_MatB, nBytes));
     CHECK(cudaMalloc((void **)&d_MatC, nBytes));
 
-    // transfer data from host to device
     CHECK(cudaMemcpy(d_MatA, h_A, nBytes, cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(d_MatB, h_B, nBytes, cudaMemcpyHostToDevice));
 
-    // invoke kernel at host side
+    // 7. 配置执行核函数
     int dimx = 32;
     int dimy = 32;
-
     if(argc > 2)
     {
         dimx = atoi(argv[1]);
@@ -128,36 +127,32 @@ int main(int argc, char **argv)
     dim3 block(dimx, dimy);
     dim3 grid((nx + block.x - 1) / block.x, (ny + block.y - 1) / block.y);
 
-    // execute the kernel
-    CHECK(cudaDeviceSynchronize());
+    // 8. 启动核函数并精确计时
+    CHECK(cudaDeviceSynchronize()); // 确保之前操作完成
     iStart = seconds();
     sumMatrixOnGPU2D<<<grid, block>>>(d_MatA, d_MatB, d_MatC, nx, ny);
-    CHECK(cudaDeviceSynchronize());
+    CHECK(cudaDeviceSynchronize()); // 等待核函数结束以获取准确时间
     iElaps = seconds() - iStart;
-    printf("sumMatrixOnGPU2D <<<(%d,%d), (%d,%d)>>> elapsed %d ms\n", grid.x,
-           grid.y,
-           block.x, block.y, iElaps);
+
+    // 修改后的 printf：使用 %u 对应 dim3 成员，使用 %f 对应 double
+    printf("sumMatrixOnGPU2D <<<(%u,%u), (%u,%u)>>> elapsed %f sec\n", 
+           grid.x, grid.y, block.x, block.y, iElaps);
+
     CHECK(cudaGetLastError());
 
-    // copy kernel result back to host side
+    // 9. 拷贝回结果并校验
     CHECK(cudaMemcpy(gpuRef, d_MatC, nBytes, cudaMemcpyDeviceToHost));
-
-    // check device results
     checkResult(hostRef, gpuRef, nxy);
 
-    // free device global memory
+    // 10. 释放资源
     CHECK(cudaFree(d_MatA));
     CHECK(cudaFree(d_MatB));
     CHECK(cudaFree(d_MatC));
-
-    // free host memory
     free(h_A);
     free(h_B);
     free(hostRef);
     free(gpuRef);
 
-    // reset device
     CHECK(cudaDeviceReset());
-
     return EXIT_SUCCESS;
 }

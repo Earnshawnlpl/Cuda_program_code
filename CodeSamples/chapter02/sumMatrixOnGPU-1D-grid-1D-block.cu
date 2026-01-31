@@ -78,8 +78,6 @@ __global__ void sumMatrixOnGPU1D(float *MatA, float *MatB, float *MatC, int nx,
             int idx = iy * nx + ix;
             MatC[idx] = MatA[idx] + MatB[idx];
         }
-
-
 }
 
 int main(int argc, char **argv)
@@ -135,7 +133,7 @@ int main(int argc, char **argv)
     CHECK(cudaMemcpy(d_MatB, h_B, nBytes, cudaMemcpyHostToDevice));
 
     // invoke kernel at host side
-    int dimx = 32;
+    int dimx = 128;
     dim3 block(dimx, 1);
     dim3 grid((nx + block.x - 1) / block.x, 1);
 

@@ -1,4 +1,4 @@
-#include "common.h"
+#include "../common/common.h"
 #include <cuda_runtime.h>
 #include <stdio.h>
 
@@ -81,7 +81,7 @@ __global__ void copyGmem(float *out, float *in, const int nrows, const int ncols
     if (row < nrows && col < ncols)
     {
 		    // NOTE this is a transpose, not a copy
-        out[INDEX(col, row, nrows)] = in[INDEX(row, col, ncols)];
+        out[INDEX(row, col, ncols)] = in[INDEX(row, col, ncols)];
     }
 }
 
