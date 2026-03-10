@@ -107,7 +107,8 @@ __global__ void blockTileGEMM(float* A, float* B, float* C, const int M, const i
 
         Bs[i][j] = (r < K && c < N) ? B[r * N + c] : 0.f;
       }
-    } __syncthreads();
+    } 
+    __syncthreads();
 
     /* ------ 计算 tileA * tileB ------ */
     // 先循环 k 维度，按向量外积的方式计算
@@ -141,7 +142,6 @@ __global__ void blockTileGEMM(float* A, float* B, float* C, const int M, const i
     }
   }
 }
-
 
 
 // 矩阵初始化函数：填充随机浮点数 [0, 1]
@@ -319,6 +319,7 @@ int main(int argc, char* argv[]) {
     checkCudaErrors(cudaMemcpy(C_gpu_cuBLAS, d_C, size_C, cudaMemcpyDeviceToHost));
 
 /*                                 cuBLAS实现                                        */
+
 
 
 
